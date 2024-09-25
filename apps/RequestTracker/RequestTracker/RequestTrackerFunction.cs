@@ -10,8 +10,6 @@ namespace RequestTracker
 {
     public class RequestTrackerFunction
     {
-        const string EntryDateFormat = "yyyy-MM-dd-HH:mm";
-
         private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
 
@@ -28,44 +26,33 @@ namespace RequestTracker
             [BlobInput(RequestResultTableEntity.PayloadContainerName)] BlobContainerClient blobContainerClient
         )
         {
-            _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
-
             var now = DateTimeOffset.UtcNow;
-
             var result = new RequestResultTableEntity()
             {
                 IsSuccess = true,
-                PartitionKey = "aa",
-                RowKey = $"api-response-{now.ToString(EntryDateFormat)}.txt",
-                RequestTriggerAt = now,
+                PartitionKey = "api-response",
+                RowKey = $"api-response-{now.ToString("yyyy-MM-dd-HH:mm")}.txt",
+                RequestTriggerAt = now
             };
 
             try
             {
-                var response = await _httpClient.GetAsync("https://stackoverflow.com");
-                result.ResponsceRecievedAt = DateTimeOffset.UtcNow;
+                _logger.LogInformation("Making an HTTP GET request");
 
-                // Read the response content
-                var content = await response.Content.ReadAsStringAsync();
+                var response = await _httpClient.GetAsync("https://google.com");
+                result.ResponseRecievedAt = DateTimeOffset.UtcNow;
 
-                // Step 2: Ensure the blob container exists
-                await blobContainerClient.CreateIfNotExistsAsync();
-
-                // Step 3: Get a reference to the blob and upload the content
-                var blobClient = blobContainerClient.GetBlobClient(result.RowKey);
-
-                // Upload the content as a stream or as bytes
-                await using var stream = await response.Content.ReadAsStreamAsync();
-                await blobClient.UploadAsync(stream, true);
-
-                _logger.LogInformation($"HTTP response data saved to Blob: {result.RowKey}");
+                await UploadResponseContentToBlob(blobContainerClient, response, result.RowKey);
 
                 response.EnsureSuccessStatusCode();
+                _logger.LogInformation("HTTP request was successful.");
             }
             catch (HttpRequestException ex)
             {
                 result.IsSuccess = false;
                 result.FailureReason = ex.Message;
+
+                _logger.LogError($"HTTP request failed: {ex.Message}");
             }
 
             return result;
@@ -78,16 +65,10 @@ namespace RequestTracker
             [TableInput(RequestResultTableEntity.TableName, Connection = "AzureWebJobsStorage")] TableClient tableClient
         )
         {
-            _logger.LogInformation($"C# GET trigger function executed at: {DateTime.Now}");
-
-            // Set default values for from and to if they are null
             var fromDate = from ?? DateTime.MinValue;
             var toDate = to ?? DateTime.MaxValue;
 
-            // Build the OData filter for querying the entities within the given time range
             var filter = $"RequestTriggerAt ge datetime'{fromDate:O}' and RequestTriggerAt le datetime'{toDate:O}'";
-
-            // Query the table storage with the filter
             var queryResults = tableClient.QueryAsync<RequestResultTableEntity>(filter);
 
             var results = new List<RequestResultTableEntity>();
@@ -95,6 +76,8 @@ namespace RequestTracker
             {
                 results.Add(entity);
             }
+
+            _logger.LogInformation($"Retrieved {results.Count} log entries from {fromDate} to {toDate}.");
 
             return new JsonResult(results);
         }
@@ -106,22 +89,31 @@ namespace RequestTracker
             [BlobInput(RequestResultTableEntity.PayloadContainerName)] BlobContainerClient blobContainerClient
         )
         {
-            _logger.LogInformation($"C# GET trigger function executed at: {DateTime.Now}");
-
             var blobClient = blobContainerClient.GetBlobClient(rowKey);
-
             if (!await blobClient.ExistsAsync())
             {
-                return new NotFoundResult(); // Return 404 if the entry does not exist
+                _logger.LogWarning($"Blob with RowKey {rowKey} not found.");
+                return new NotFoundResult();
             }
 
             var blobDownloadInfo = await blobClient.DownloadStreamingAsync();
-
-            // Return the file as a response
             return new FileStreamResult(blobDownloadInfo.Value.Content, "text/plain")
             {
                 FileDownloadName = rowKey
             };
+        }
+
+        private async Task UploadResponseContentToBlob(BlobContainerClient blobContainerClient, HttpResponseMessage response, string rowKey)
+        {
+            await blobContainerClient.CreateIfNotExistsAsync();
+
+            var blobClient = blobContainerClient.GetBlobClient(rowKey);
+
+            // Read the response content as a stream and upload it to Blob storage
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            await blobClient.UploadAsync(stream);
+
+            _logger.LogInformation($"HTTP response data saved to Blob: {rowKey}");
         }
     }
 }

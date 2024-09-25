@@ -9,7 +9,7 @@ public class RequestResultTableEntity : ITableEntity
     public const string PayloadContainerName = "payload-containerxxx";
 
     public DateTimeOffset RequestTriggerAt { get; set; }
-    public DateTimeOffset ResponsceRecievedAt { get; set; }
+    public DateTimeOffset ResponseRecievedAt { get; set; }
     public required string PartitionKey { get; set; }
     public required string RowKey { get; set; }
     public bool IsSuccess { get; set; }
