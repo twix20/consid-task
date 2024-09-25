@@ -1,0 +1,16 @@
+services:
+  weathervisualizer.api:
+    image: ${DOCKER_REGISTRY-}weathervisualizerapi
+    build:
+      context: .
+      dockerfile: WeatherVisualizer.Api/Dockerfile
+    depends_on:
+      - db
+
+  db:
+    image: "mcr.microsoft.com/mssql/server:2017-latest"
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=1Secure*Password1
