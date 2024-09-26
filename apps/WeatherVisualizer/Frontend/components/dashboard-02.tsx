@@ -69,7 +69,7 @@ export default function Dashboard() {
           <div className="flex items-center">
             <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
           </div>
-          <div className="flex flex-1 items-center justify-center gap-4">
+          <div className="flex flex-1 items-center justify-center gap-4 flex-wrap lg:flex-nowrap">
             <Card className="w-full">
               <CardHeader>
                 <CardTitle>Min temperature</CardTitle>
