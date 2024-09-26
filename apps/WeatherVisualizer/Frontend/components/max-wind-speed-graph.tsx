@@ -1,5 +1,6 @@
 "use client";
 
+import { useGetWeatherMeasurements } from "@/api/weather-visualizer";
 import {
   ResponsiveContainer,
   CartesianGrid,
@@ -20,6 +21,8 @@ const maxWindSpeedData = [
 ];
 
 export const MaxWindSpeedGraph = () => {
+  const xx = useGetWeatherMeasurements();
+
   return (
     <ResponsiveContainer width="100%" height={400}>
       <LineChart data={maxWindSpeedData}>

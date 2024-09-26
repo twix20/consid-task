@@ -14,3 +14,8 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=1Secure*Password1
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+volumes:
+  sqlserver_data:
