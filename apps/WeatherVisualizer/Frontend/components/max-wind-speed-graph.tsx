@@ -11,6 +11,8 @@ import {
   Line,
   Legend,
 } from "recharts";
+import { getCityColor, getRandomColor } from "./utils";
+import { useMesurmentsToChartData } from "@/hooks/use-mesurments-to-chart-data";
 
 // Mocked data for Max Wind Speed Graph
 const maxWindSpeedData = [
@@ -21,24 +23,34 @@ const maxWindSpeedData = [
 ];
 
 export const MaxWindSpeedGraph = () => {
-  const xx = useGetWeatherMeasurements();
+  const { data } = useGetWeatherMeasurements({
+    query: {
+      refetchInterval: 1000,
+    } as never,
+  });
+
+  const { chartData, uniqueCityNames } = useMesurmentsToChartData(
+    data?.data || []
+  );
 
   return (
     <ResponsiveContainer width="100%" height={400}>
-      <LineChart data={maxWindSpeedData}>
+      <LineChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="lastUpdate" />
         <YAxis />
         <Tooltip formatter={(value, name) => [`${value} km/h`, name]} />
         <Legend />
-        <Line
-          type="monotone"
-          dataKey="Chicago"
-          stroke="#82ca9d"
-          name="Chicago"
-        />
-        <Line type="monotone" dataKey="London" stroke="#8884d8" name="London" />
-        <Line type="monotone" dataKey="Miami" stroke="#ff7300" name="Miami" />
+
+        {uniqueCityNames.map((cityName) => (
+          <Line
+            key={cityName}
+            type="monotone"
+            dataKey={`cities.${cityName}.windKph`}
+            stroke={getCityColor(cityName)}
+            name={cityName}
+          />
+        ))}
       </LineChart>
     </ResponsiveContainer>
   );

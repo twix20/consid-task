@@ -1,4 +1,4 @@
-import { Home, Menu, Package2 } from "lucide-react";
+import { Home, Menu } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
