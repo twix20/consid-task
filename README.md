@@ -45,7 +45,7 @@ Additionally, stored procedures are implemented to analyze and filter weather da
 ## Screens
 
 ![Dashboard](docs/dasboard.png)
-![Dashboard Mobile](docs/dashboard-mobile.png.png)
+![Dashboard Mobile](docs/dashboard-mobile.png)
 
 ![Dashboard Mobile](docs/sp-GetMaxWindSpeedByCountry.png)
 ![Dashboard Mobile](docs/sp-GetMinTempAndMaxWindByCountry.png)
