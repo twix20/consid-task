@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using WeatherVisualizer.Api.Models;
 using WeatherVisualizer.Core.Entities;
 using WeatherVisualizer.Infrastructure;
 
@@ -9,6 +10,7 @@ public class WeatherHostedService : IHostedService, IDisposable
     private readonly ILogger<WeatherHostedService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private IConfiguration _configuration;
     private Timer _timer;
 
     private readonly List<string> cities = new List<string>
@@ -17,14 +19,12 @@ public class WeatherHostedService : IHostedService, IDisposable
         "Tokyo,JP", "Sydney,AU", "Toronto,CA", "Rio de Janeiro,BR", "Mumbai,IN"
     };
 
-    private const string WeatherApiUrl = "http://api.weatherapi.com/v1/current.json";
-    private const string ApiKey = "e06eecd33d294f66baa211024242509 "; // Replace with your RapidAPI key
-
-    public WeatherHostedService(ILogger<WeatherHostedService> logger, IHttpClientFactory httpClientFactory, IServiceScopeFactory serviceScopeFactory)
+    public WeatherHostedService(ILogger<WeatherHostedService> logger, IHttpClientFactory httpClientFactory, IServiceScopeFactory serviceScopeFactory, IConfiguration configuration)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
-        this._serviceScopeFactory = serviceScopeFactory;
+        _serviceScopeFactory = serviceScopeFactory;
+        _configuration = configuration;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -45,7 +45,9 @@ public class WeatherHostedService : IHostedService, IDisposable
         {
             try
             {
-                var response = await httpClient.GetAsync($"{WeatherApiUrl}?q={city}&key={ApiKey}");
+                var url = $"{_configuration["WeatherApi:BaseUrl"]}/v1/current.json?q={city}&key={_configuration["WeatherApi:ApiKey"]}";
+
+                var response = await httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
 
                 var jsonResponse = await response.Content.ReadAsStringAsync();
@@ -83,63 +85,5 @@ public class WeatherHostedService : IHostedService, IDisposable
     public void Dispose()
     {
         _timer?.Dispose();
-    }
-
-    public class WeatherResponse
-    {
-        public Location Location { get; set; }
-        public Current Current { get; set; }
-    }
-
-    public class Location
-    {
-        public string Name { get; set; }
-        public string Region { get; set; }
-        public string Country { get; set; }
-        public double Lat { get; set; }
-        public double Lon { get; set; }
-        public string Tz_Id { get; set; }
-        public long Localtime_Epoch { get; set; }
-        public string Localtime { get; set; }
-    }
-
-    public class Current
-    {
-        public long Last_Updated_Epoch { get; set; }
-        public string Last_Updated { get; set; }
-        public double Temp_C { get; set; }
-        public double Temp_F { get; set; }
-        public int Is_Day { get; set; }
-        public Condition Condition { get; set; }
-        public double Wind_Mph { get; set; }
-        public double Wind_Kph { get; set; }
-        public int Wind_Degree { get; set; }
-        public string Wind_Dir { get; set; }
-        public double Pressure_Mb { get; set; }
-        public double Pressure_In { get; set; }
-        public double Precip_Mm { get; set; }
-        public double Precip_In { get; set; }
-        public int Humidity { get; set; }
-        public int Cloud { get; set; }
-        public double Feelslike_C { get; set; }
-        public double Feelslike_F { get; set; }
-        public double Windchill_C { get; set; }
-        public double Windchill_F { get; set; }
-        public double Heatindex_C { get; set; }
-        public double Heatindex_F { get; set; }
-        public double Dewpoint_C { get; set; }
-        public double Dewpoint_F { get; set; }
-        public double Vis_Km { get; set; }
-        public double Vis_Miles { get; set; }
-        public double Uv { get; set; }
-        public double Gust_Mph { get; set; }
-        public double Gust_Kph { get; set; }
-    }
-
-    public class Condition
-    {
-        public string Text { get; set; }
-        public string Icon { get; set; }
-        public int Code { get; set; }
     }
 }
